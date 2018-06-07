@@ -7,9 +7,30 @@ import socket
 import select
 import time
 import sys
+import string
+
+def remove_control_chars(s):
+    return ''.join([x for x in s if x in string.printable])
+
+if len(sys.argv)<3:
+    print("usage:\n\t"+sys.argv[0]+" <listen port> <remote host>:<remote port>")
+    sys.exit(1)
+
+listen_port=None
+remote_host=None
+remote_port=None
+try:
+    remote_parts=sys.argv[2].split(':')
+    listen_port=int(sys.argv[1])
+    remote_host=remote_parts[0]
+    remote_port=int(remote_parts[1])
+except Exception as e:
+    print("An argument was malformed")
+    print(e)
+    sys.exit(1)
 
 buffer_size = 4096
-forward_to = ('www.voorloopnul.com', 80)
+forward_to = (remote_host, remote_port)
 
 class Forward:
     def __init__(self):
@@ -80,11 +101,11 @@ class TheServer:
     def on_recv(self, s):
         data = self.data
         # here we can parse and/or modify the data before send forward
-        print(data)
+        print(remove_control_chars(data.decode('utf-8', errors='ignore')))
         self.channel[s].send(data)
 
 if __name__ == '__main__':
-        server = TheServer('', 9090)
+        server = TheServer('', listen_port)
         try:
             server.main_loop()
         except KeyboardInterrupt:
